@@ -1,6 +1,6 @@
 {
   "name": "bun-sqlite-migrate",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Declarative schema migration for SQLite",
   "module": "migrate.ts",
   "type": "module",
@@ -11,5 +11,8 @@
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "bump-version": "bun run bump-version.ts"
   }
 }

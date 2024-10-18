@@ -17,7 +17,7 @@ The migrator script allows you to define your desired SQLite schema in a SQL fil
 - Preserves data during migrations where possible
 - Foreign key constraint checking
 
-# Missing features
+## Missing features
 
  - Start and commit a transaction.
  - Handle triggers and views.
@@ -46,14 +46,45 @@ CREATE TABLE users (
 3. Run the migrator script:
 
 ```bash
-bunx bun-sqlite-migrate <database_path> <schema_file_path>
+bunx bun-sqlite-migrate --database <database_path> --schema <schema_file_path>
 ```
 
-For example:
+4. Update the schema by adding a column and a table. For example, let's add a `created_at` column to the `users` table and create a new `posts` table:
+
+```sql
+-- Users table with new column
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    -- ... other columns ...
+);
+
+-- New posts table
+CREATE TABLE posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- ... other tables and indices ...
+```
+
+5. Run the migrator script again to apply the changes:
 
 ```bash
-bunx bun-sqlite-migrate db.sqlite schema.sql
+bunx bun-sqlite-migrate --database <database_path> --schema <schema_file_path>
 ```
+
+6. The migrator will automatically detect the changes and update your database schema accordingly, preserving existing data.
+
+7. Repeat steps 4-6 whenever you need to make changes to your database schema.
+
+Remember to always backup your database before running migrations, especially in a production environment.
 
 ## How It Works
 

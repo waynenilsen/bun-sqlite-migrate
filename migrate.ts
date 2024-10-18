@@ -3,56 +3,9 @@
 /**
  * Simple declarative schema migration for SQLite.
  * 
- * Create a declarative schema like this:
- * 
- * schema.sql
- * ```
- * -- Users table
- * CREATE TABLE users (
- *     id INTEGER PRIMARY KEY AUTOINCREMENT,
- *     username TEXT NOT NULL UNIQUE,
- *     email TEXT NOT NULL UNIQUE,
- *     password_hash TEXT NOT NULL,
- *     is_admin BOOLEAN NOT NULL DEFAULT FALSE,
- *     characters_remaining INTEGER NOT NULL DEFAULT 1000000,
- *     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
- *     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
- * );
- * 
- * -- Sessions table
- * CREATE TABLE sessions (
- *     id INTEGER PRIMARY KEY AUTOINCREMENT,
- *     user_id INTEGER NOT NULL,
- *     token TEXT NOT NULL UNIQUE,
- *     expires_at TIMESTAMP NOT NULL,
- *     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
- *     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
- * );
- * 
- * -- Index for faster token lookups
- * CREATE INDEX idx_sessions_token ON sessions(token);
- * 
- * -- Index for user lookups in sessions
- * CREATE INDEX idx_sessions_user_id ON sessions(user_id);
- * 
- * -- Trigger to update the updated_at timestamp for users
- * CREATE TRIGGER update_users_timestamp 
- * AFTER UPDATE ON users
- * BEGIN
- *     UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
- * END;
- * ```
- * 
- * Then run this script:
- * 
- * ```
- * bun migrator.ts db.sqlite schema.sql
- * ```
- * 
- * Change the schema.sql file and re-run the script to migrate again.
- * 
  * See <https://david.rothlis.net/declarative-schema-migration-for-sqlite>
- * for the original motivation.
+ * for the original motivation. His implementation is in Python. I wanted
+ * one that was compatible with Bun / TypeScript.
  * 
  * Original Author: William Manley <will@stb-tester.com>.
  * Copyright © 2019-2022 Stb-tester.com Ltd.
@@ -335,15 +288,80 @@ function testNormaliseSql(): void {
     console.assert(result === expected, `Expected: ${expected}, Got: ${result}`);
 }
 
+function printHelp() {
+    console.log(`
+NAME
+    bunx bun-sqlite-migrate - Simple declarative schema migration for SQLite
+
+SYNOPSIS
+    bunx bun-sqlite-migrate [OPTIONS]
+
+DESCRIPTION
+    This script performs schema migrations for SQLite databases based on a declarative schema file.
+    It compares the current database structure with the provided schema and makes necessary changes
+    to align the database with the schema, including creating new tables, modifying existing ones,
+    and optionally deleting tables or columns.
+
+OPTIONS
+    --database <path>
+        Path to the SQLite database file to be migrated. Required.
+
+    --schema <path>
+        Path to the SQL file containing the declarative schema. Required.
+
+    --allow-deletions
+        Allow the deletion of tables and columns during migration. Optional.
+        By default, deletions are not allowed to prevent accidental data loss.
+
+EXAMPLES
+    bun run migrate.ts --database db.sqlite --schema schema.sql
+        Migrate the database 'db.sqlite' using the schema defined in 'schema.sql'.
+
+    bun run migrate.ts --database db.sqlite --schema schema.sql --allow-deletions
+        Migrate the database, allowing deletions of tables and columns if necessary.
+
+EXIT STATUS
+    0   Migration completed successfully or no changes were necessary.
+    1   An error occurred during migration or invalid arguments were provided.
+
+AUTHOR
+    Original Author: William Manley <will@stb-tester.com>
+    Ported to TypeScript by Wayne Nilsen / Claude-3.5-sonnet
+
+COPYRIGHT
+    Copyright © 2019-2022 Stb-tester.com Ltd.
+    License: MIT
+`);
+}
 
 function main() {
     const args = process.argv.slice(2);
-    if (args.length !== 2) {
-        console.error("Usage: bun run migrator-cli.ts <database_path> <schema_file_path>");
-        process.exit(1);
+    let dbPath: string | undefined;
+    let schemaPath: string | undefined;
+    let allowDeletions: boolean = false;
+
+    for (let i = 0; i < args.length; i++) {
+        switch (args[i]) {
+            case '--database':
+                dbPath = args[++i];
+                break;
+            case '--schema':
+                schemaPath = args[++i];
+                break;
+            case '--allow-deletions':
+                allowDeletions = true;
+                break;
+            case '--help':
+                printHelp();
+                process.exit(0);
+        }
     }
 
-    const [dbPath, schemaPath] = args;
+    if (!dbPath || !schemaPath) {
+        console.error("Error: Missing required arguments.");
+        printHelp();
+        process.exit(1);
+    }
 
     try {
         const db = new Database(dbPath);
@@ -351,8 +369,9 @@ function main() {
 
         console.log(`Migrating database: ${dbPath}`);
         console.log(`Using schema from: ${schemaPath}`);
+        console.log(`Allow deletions: ${allowDeletions}`);
 
-        const changed = dumbMigrateDb(db, schema, false);
+        const changed = dumbMigrateDb(db, schema, allowDeletions);
 
         if (changed) {
             console.log("Database migration completed successfully.");
@@ -368,5 +387,3 @@ function main() {
 }
 
 main();
-
-
