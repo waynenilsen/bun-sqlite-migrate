@@ -46,8 +46,10 @@ CREATE TABLE users (
 3. Run the migrator script:
 
 ```bash
-bunx bun-sqlite-migrate --database <database_path> --schema <schema_file_path>
+bunx bun-sqlite-migrate --database <database_path> --schema <schema_file_path> [--allow-deletions]
 ```
+
+The `--allow-deletions` flag is optional. If provided, it allows the deletion of tables and columns during migration. Use this flag with caution, as it may result in data loss.
 
 4. Update the schema by adding a column and a table. For example, let's add a `created_at` column to the `users` table and create a new `posts` table:
 
@@ -77,7 +79,7 @@ CREATE TABLE posts (
 5. Run the migrator script again to apply the changes:
 
 ```bash
-bunx bun-sqlite-migrate --database <database_path> --schema <schema_file_path>
+bunx bun-sqlite-migrate --database <database_path> --schema <schema_file_path> [--allow-deletions]
 ```
 
 6. The migrator will automatically detect the changes and update your database schema accordingly, preserving existing data.
