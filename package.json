@@ -3,6 +3,9 @@
   "version": "0.0.2",
   "description": "Declarative schema migration for SQLite",
   "module": "migrate.ts",
+  "repository": "https://github.com/waynenilsen/bun-sqlite-migrate",
+  "author": "Wayne Nilsen",
+  "homepage": "https://github.com/waynenilsen/bun-sqlite-migrate",
   "type": "module",
   "license": "MIT",
   "bin": "migrate.ts",
@@ -13,6 +16,7 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "bump-version": "bun run bump-version.ts"
+    "bump-version": "bun run bump-version.ts",
+    "bump-and-publish": "bun run bump-version.ts && bun publish"
   }
 }
